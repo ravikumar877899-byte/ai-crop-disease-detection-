@@ -350,83 +350,84 @@ def chat():
         return jsonify({'response': resp})
 
     try:
-        # Enhanced Keyword-based "AI" Engine
-    response = ""
-    
-    # Check for specific disease mentions (full keys or parts)
-    found_disease_key = None
-    for key in disease_info.keys():
-        if key.lower().replace("_", " ") in user_message or key.lower() in user_message:
-            found_disease_key = key
-            break
-            
-    # Check for crop mentions if no specific disease found
-    found_crop = None
-    if not found_disease_key:
-        crops = set(k.split('___')[0] for k in disease_info.keys())
-        for crop in crops:
-            if crop.lower().replace('_', ' ') in user_message:
-                found_crop = crop
-                break
-
-    # 1. Handle Greetings
-    if any(k in user_message for k in ["hello", "hi", "hey", "வணக்கம்"]):
-        response = "Hello! I'm the AgroAI Pro assistant. How are your crops doing today?" if lang == 'en' else "வணக்கம்! நான் அக்ரோஏஐ ப்ரோ உதவியாளர். உங்கள் பயிர்கள் இன்று எப்படி இருக்கின்றன?"
-
-    # 2. Specific Disease Found
-    elif found_disease_key:
-        info = disease_info[found_disease_key]
-        name = info['name']
-        symptoms = info['symptoms']
-        treatments = info['treatment']
+            # Enhanced Keyword-based "AI" Engine
+        response = ""
         
-        if any(k in user_message for k in ["treatment", "cure", "fix", "சிகிச்சை", "தீர்வு"]):
-            if lang == 'en':
-                response = f"For {name}, the recommended treatments are: " + " ".join([f"{i+1}. {t}" for i, t in enumerate(treatments)])
-            else:
-                response = f"{name} நோய்க்கான பரிந்துரைக்கப்பட்ட சிகிச்சைகள்: " + " ".join([f"{i+1}. {t}" for i, t in enumerate(treatments)])
-        elif any(k in user_message for k in ["symptom", "look like", "அறிகுறி"]):
-            if lang == 'en':
-                response = f"The symptoms of {name} include: {symptoms}"
-            else:
-                response = f"{name} நோயின் அறிகுறிகள்: {symptoms}"
-        else:
-            if lang == 'en':
-                response = f"I found information on {name}. It's a {info['type']}. Symptoms: {symptoms}. Would you like to know the treatment?"
-            else:
-                response = f"{name} பற்றிய தகவலைக் கண்டேன். இது ஒரு {info['type']}. அறிகுறிகள்: {symptoms}. நீங்கள் சிகிச்சையை அறிய விரும்புகிறீர்களா?"
+        # Check for specific disease mentions (full keys or parts)
+        found_disease_key = None
+        for key in disease_info.keys():
+            if key.lower().replace("_", " ") in user_message or key.lower() in user_message:
+                found_disease_key = key
+                break
+                
+        # Check for crop mentions if no specific disease found
+        found_crop = None
+        if not found_disease_key:
+            crops = set(k.split('___')[0] for k in disease_info.keys())
+            for crop in crops:
+                if crop.lower().replace('_', ' ') in user_message:
+                    found_crop = crop
+                    break
 
-    # 3. Crop Found (General)
-    elif found_crop:
-        related_diseases = [v['name'] for k, v in disease_info.items() if k.startswith(found_crop)]
-        crop_display = found_crop.replace('_', ' ').title()
-        if lang == 'en':
-            response = f"I have data on several conditions for {crop_display}, including: {', '.join(related_diseases)}. Which one are you concerned about, or would you like general care tips?"
-        else:
-            response = f"{crop_display} பயிருக்கான பல நிலைகள் குறித்த தரவு என்னிடம் உள்ளது: {', '.join(related_diseases)}. நீங்கள் எதைப் பற்றி கவலைப்படுகிறீர்கள்?"
+        # 1. Handle Greetings
+        if any(k in user_message for k in ["hello", "hi", "hey", "வணக்கம்"]):
+            response = "Hello! I'm the AgroAI Pro assistant. How are your crops doing today?" if lang == 'en' else "வணக்கம்! நான் அக்ரோஏஐ ப்ரோ உதவியாளர். உங்கள் பயிர்கள் இன்று எப்படி இருக்கின்றன?"
 
-    # 4. Accuracy Queries
-    elif any(k in user_message for k in ["accuracy", "precise", "துல்லியம்"]):
-        response = "Our AI Vision engine operates with up to 100% verified accuracy when calibrated using the 'Direct Vision Calibration' tool in the Analyze section." if lang == 'en' else "எங்கள் AI விஷன் இன்ஜின் 100% சரிபார்க்கப்பட்ட துல்லியத்துடன் செயல்படுகிறது."
-
-    # 5. Fallback or Gemini AI
-    else:
-        if GEMINI_AVAILABLE:
-            try:
-                prompt = f"You are an expert Agricultural Assistant called AgroAI Pro. The user is asking: '{user_message}'. Answer in {'English' if lang == 'en' else 'Tamil'}. Keep it helpful and concise."
-                gemini_resp = model_gemini.generate_content(prompt)
-                response = gemini_resp.text
-            except Exception as e:
-                print(f"Gemini generation error: {e}")
+        # 2. Specific Disease Found
+        elif found_disease_key:
+            info = disease_info[found_disease_key]
+            name = info['name']
+            symptoms = info['symptoms']
+            treatments = info['treatment']
+            
+            if any(k in user_message for k in ["treatment", "cure", "fix", "சிகிச்சை", "தீர்வு"]):
                 if lang == 'en':
-                    response = "I recommend using our 'Analyze' tool for best results. I can also help with symptoms if you name a crop."
+                    response = f"For {name}, the recommended treatments are: " + " ".join([f"{i+1}. {t}" for i, t in enumerate(treatments)])
                 else:
-                    response = "சிறந்த முடிவுகளுக்கு 'பகுப்பாய்வு' கருவியைப் பயன்படுத்தவும்."
-        else:
-            if lang == 'en':
-                response = "I recommend using our 'Analyze' tool with a clear photo of the plant leaf for the best diagnostic results. I can also tell you about symptoms and treatments if you mention a specific crop like Tomato or Apple."
+                    response = f"{name} நோய்க்கான பரிந்துரைக்கப்பட்ட சிகிச்சைகள்: " + " ".join([f"{i+1}. {t}" for i, t in enumerate(treatments)])
+            elif any(k in user_message for k in ["symptom", "look like", "அறிகுறி"]):
+                if lang == 'en':
+                    response = f"The symptoms of {name} include: {symptoms}"
+                else:
+                    response = f"{name} நோயின் அறிகுறிகள்: {symptoms}"
             else:
-                response = "சிறந்த முடிவுகளுக்கு 'பகுப்பாய்வு' கருவியைப் பயன்படுத்த பரிந்துரைக்கிறேன். தக்காளி அல்லது ஆப்பிள் போன்ற குறிப்பிட்ட பயிரைக் குறிப்பிட்டால் நான் அறிகுறிகள் மற்றும் சிகிச்சைகளைப் பற்றி சொல்ல முடியும்."
+                if lang == 'en':
+                    response = f"I found information on {name}. It's a {info['type']}. Symptoms: {symptoms}. Would you like to know the treatment?"
+                else:
+                    response = f"{name} பற்றிய தகவலைக் கண்டேன். இது ஒரு {info['type']}. அறிகுறிகள்: {symptoms}. நீங்கள் சிகிச்சையை அறிய விரும்புகிறீர்களா?"
+
+        # 3. Crop Found (General)
+        elif found_crop:
+            related_diseases = [v['name'] for k, v in disease_info.items() if k.startswith(found_crop)]
+            crop_display = found_crop.replace('_', ' ').title()
+            if lang == 'en':
+                response = f"I have data on several conditions for {crop_display}, including: {', '.join(related_diseases)}. Which one are you concerned about, or would you like general care tips?"
+            else:
+                response = f"{crop_display} பயிருக்கான பல நிலைகள் குறித்த தரவு என்னிடம் உள்ளது: {', '.join(related_diseases)}. நீங்கள் எதைப் பற்றி கவலைப்படுகிறீர்கள்?"
+
+        # 4. Accuracy Queries
+        elif any(k in user_message for k in ["accuracy", "precise", "துல்லியம்"]):
+            response = "Our AI Vision engine operates with up to 100% verified accuracy when calibrated using the 'Direct Vision Calibration' tool in the Analyze section." if lang == 'en' else "எங்கள் AI விஷன் இன்ஜின் 100% சரிபார்க்கப்பட்ட துல்லியத்துடன் செயல்படுகிறது."
+
+        # 5. Fallback or Gemini AI
+        else:
+            if GEMINI_AVAILABLE:
+                try:
+                    prompt = f"You are an expert Agricultural Assistant called AgroAI Pro. The user is asking: '{user_message}'. Answer in {{'English' if lang == 'en' else 'Tamil'}}. Keep it helpful and concise."
+                    gemini_resp = model_gemini.generate_content(prompt)
+                    response = gemini_resp.text
+                except Exception as e:
+                    print(f"Gemini generation error: {e}")
+                    if lang == 'en':
+                        response = "I recommend using our 'Analyze' tool for best results. I can also help with symptoms if you name a crop."
+                    else:
+                        response = "சிறந்த முடிவுகளுக்கு 'பகுப்பாய்வு' கருவியைப் பயன்படுத்தவும்."
+            else:
+                if lang == 'en':
+                    response = "I recommend using our 'Analyze' tool with a clear photo of the plant leaf for the best diagnostic results. I can also tell you about symptoms and treatments if you mention a specific crop like Tomato or Apple."
+                else:
+                    response = "சிறந்த முடிவுகளுக்கு 'பகுப்பாய்வு' கருவியைப் பயன்படுத்த பரிந்துரைக்கிறேன். தக்காளி அல்லது ஆப்பிள் போன்ற குறிப்பிட்ட பயிரைக் குறிப்பிட்டால் நான் அறிகுறிகள் மற்றும் சிகிச்சைகளைப் பற்றி சொல்ல முடியும்."
+
 
     except Exception as global_e:
         print(f"Global Chat Error: {global_e}")
